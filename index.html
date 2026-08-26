@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>صفحة تجريبية — MORO</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --line:#2b3240;
+    --text:#e6edf3; --muted:#8b949e; --accent:#3b82f6; --accent2:#22d3ee;
+  }
+  html[data-theme="light"]{
+    --bg:#f5f7fa; --panel:#ffffff; --line:#e2e8f0;
+    --text:#111827; --muted:#5b6675; --accent:#2563eb; --accent2:#0891b2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Segoe UI",Tahoma,system-ui,sans-serif;
+    background:var(--bg); color:var(--text);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:24px; transition:background .25s,color .25s;
+  }
+  .wrap{width:100%;max-width:760px}
+  header{text-align:center;margin-bottom:28px}
+  h1{font-size:2rem;margin-bottom:8px;
+     background:linear-gradient(90deg,var(--accent),var(--accent2));
+     -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:.95rem}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .card h2{font-size:1.05rem;margin-bottom:10px}
+  .card p{color:var(--muted);font-size:.9rem;line-height:1.7}
+  .counter{grid-column:1/-1;text-align:center}
+  #count{font-size:3rem;font-weight:700;color:var(--accent);display:block;margin:6px 0 16px;font-variant-numeric:tabular-nums}
+  .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  button{
+    font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--accent);color:#fff;padding:10px 20px;border-radius:9px;
+    transition:transform .12s,opacity .2s;
+  }
+  button.ghost{background:transparent;color:var(--text)}
+  button:hover{opacity:.88}
+  button:active{transform:scale(.96)}
+  footer{text-align:center;margin-top:26px;color:var(--muted);font-size:.82rem}
+  #clock{font-variant-numeric:tabular-nums;color:var(--accent2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>صفحة ويب تجريبية</h1>
+    <p class="sub">بناها <strong>MORO</strong> — المساعد الشخصي للمهندس سامر</p>
+  </header>
+
+  <div class="grid">
+    <div class="card counter">
+      <h2>عدّاد تفاعلي</h2>
+      <span id="count">0</span>
+      <div class="row">
+        <button id="inc">زيادة +1</button>
+        <button id="dec" class="ghost">إنقاص −1</button>
+        <button id="reset" class="ghost">تصفير</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>تبديل الثيم</h2>
+      <p>تبديل بين الوضع الليلي والنهاري. الاختيار محفوظ في المتصفح.</p>
+      <div class="row" style="margin-top:12px">
+        <button id="theme" class="ghost">تبديل الثيم</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>الوقت الحالي</h2>
+      <p>ساعة حيّة تعمل بـ JavaScript خالص.</p>
+      <p style="margin-top:10px;font-size:1.6rem"><span id="clock">--:--:--</span></p>
+    </div>
+
+    <div class="card">
+      <h2>تصميم متجاوب</h2>
+      <p>تخطيط شبكي يتكيف مع الجوال والحاسوب، ودعم كامل للاتجاه من اليمين إلى اليسار.</p>
+    </div>
+  </div>
+
+  <footer>صفحة ثابتة بملف واحد — بدون أي مكتبات خارجية.</footer>
+</div>
+
+<script>
+(function(){
+  var count = 0;
+  var el = document.getElementById('count');
+  function render(){ el.textContent = count; }
+  document.getElementById('inc').addEventListener('click', function(){ count++; render(); });
+  document.getElementById('dec').addEventListener('click', function(){ count--; render(); });
+  document.getElementById('reset').addEventListener('click', function(){ count = 0; render(); });
+  render();
+
+  var root = document.documentElement;
+  try {
+    var saved = localStorage.getItem('moro-theme');
+    if (saved) root.setAttribute('data-theme', saved);
+  } catch(e){}
+  document.getElementById('theme').addEventListener('click', function(){
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('moro-theme', next); } catch(e){}
+  });
+
+  var clock = document.getElementById('clock');
+  function tick(){
+    var d = new Date(), p = function(n){ return String(n).padStart(2,'0'); };
+    clock.textContent = p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+  }
+  tick(); setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>
