@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>MORO</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --bg:#0a0f1c; --panel:#111827; --line:#1f2937;
+    --text:#e8eef7; --muted:#8b98ab;
+    --accent:#22d3ee; --me:#0e7490; --moro:#161f30;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-t: env(safe-area-inset-top, 0px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden}
+  body{
+    font-family:-apple-system,"Segoe UI",Roboto,"Noto Naskh Arabic",Tahoma,sans-serif;
+    background:var(--bg);color:var(--text);display:flex;flex-direction:column;
+  }
+  button,input,textarea{font:inherit}
+
+  /* ---------- شاشة القفل ---------- */
+  #lock{
+    position:fixed;inset:0;z-index:100;background:var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:32px 26px;gap:18px;
+  }
+  #lock.hide{display:none}
+  .logo{
+    width:92px;height:92px;border-radius:23px;
+    background:linear-gradient(145deg,#0f1f3d,#22d3ee);
+    display:grid;place-items:center;font-size:46px;font-weight:800;color:#03202b;
+  }
+  #lock h1{font-size:1.45rem}
+  #lock p{color:var(--muted);font-size:.9rem;text-align:center;line-height:1.7}
+  .pwrow{width:100%;max-width:330px;display:flex;flex-direction:column;gap:11px}
+  #pw{
+    background:var(--panel);border:1px solid var(--line);border-radius:13px;
+    padding:14px 16px;color:var(--text);font-size:1rem;text-align:center;outline:none;
+  }
+  #pw:focus{border-color:var(--accent)}
+  .bigbtn{
+    background:var(--accent);color:#062a35;border:none;border-radius:13px;
+    padding:14px;font-weight:700;font-size:1rem;cursor:pointer;
+  }
+  .bigbtn:active{transform:scale(.98)}
+  .bigbtn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+  #lockmsg{color:#f87171;font-size:.86rem;min-height:20px;text-align:center}
+
+  /* ---------- الرأس ---------- */
+  header{
+    display:flex;align-items:center;gap:11px;flex-shrink:0;
+    padding:calc(12px + var(--safe-t)) 14px 12px;
+    background:var(--panel);border-bottom:1px solid var(--line);
+  }
+  .av{
+    width:39px;height:39px;border-radius:11px;flex-shrink:0;
+    background:linear-gradient(145deg,#0f1f3d,#22d3ee);
+    display:grid;place-items:center;font-weight:800;font-size:19px;color:#03202b;
+  }
+  .who{flex:1;min-width:0}
+  .who b{display:block;font-size:1rem}
+  .who span{font-size:.73rem;color:var(--muted);display:flex;align-items:center;gap:5px}
+  .dot{width:7px;height:7px;border-radius:50%;background:#22c55e}
+  .dot.off{background:#f59e0b}
+  .hbtn{
+    background:transparent;border:1px solid var(--line);color:var(--text);
+    border-radius:10px;padding:7px 10px;font-size:.76rem;cursor:pointer;white-space:nowrap;
+  }
+  .hbtn:active{transform:scale(.95)}
+
+  /* ---------- الشرائح ---------- */
+  .tabs{display:flex;flex-shrink:0;background:var(--panel);border-bottom:1px solid var(--line)}
+  .tab{
+    flex:1;padding:11px;text-align:center;font-size:.86rem;color:var(--muted);
+    background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;
+  }
+  .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+
+  .view{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none}
+  .view.on{display:block}
+
+  /* ---------- الدردشة ---------- */
+  #log{padding:15px 13px 10px;display:flex;flex-direction:column;gap:11px}
+  .row{display:flex}
+  .row.me{justify-content:flex-end}
+  .row.moro{justify-content:flex-start}
+  .msg{
+    max-width:83%;padding:11px 14px;border-radius:16px;font-size:.94rem;
+    line-height:1.65;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;
+  }
+  .me .msg{background:var(--me);color:#fff;border-bottom-left-radius:5px}
+  .moro .msg{background:var(--moro);border:1px solid var(--line);border-bottom-right-radius:5px}
+  .t{font-size:.65rem;color:var(--muted);margin-top:4px;text-align:right}
+  .me .t{color:rgba(255,255,255,.6)}
+  .msg img{max-width:100%;border-radius:10px;margin-top:6px;display:block}
+  .msg audio{width:100%;margin-top:6px}
+  .note{
+    text-align:center;color:var(--muted);font-size:.79rem;background:var(--panel);
+    border:1px solid var(--line);border-radius:11px;padding:10px 12px;line-height:1.7;
+  }
+  .typing{display:flex;gap:4px;padding:4px 2px}
+  .typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:bp 1.3s infinite}
+  .typing i:nth-child(2){animation-delay:.18s}
+  .typing i:nth-child(3){animation-delay:.36s}
+  @keyframes bp{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-5px)}}
+
+  /* ---------- المعرض ---------- */
+  #gal{padding:14px 13px;display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:9px}
+  .cell{
+    aspect-ratio:1;background:var(--panel);border:1px solid var(--line);
+    border-radius:11px;overflow:hidden;display:grid;place-items:center;
+    font-size:.72rem;color:var(--muted);text-align:center;padding:7px;
+  }
+  .cell img{width:100%;height:100%;object-fit:cover}
+
+  /* ---------- الرصيد ---------- */
+  #acct{padding:18px 15px;display:flex;flex-direction:column;gap:13px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:17px}
+  .card h3{font-size:.86rem;color:var(--muted);font-weight:500;margin-bottom:7px}
+  .big{font-size:2.05rem;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+  .kv{display:flex;justify-content:space-between;font-size:.88rem;padding:7px 0;border-bottom:1px solid var(--line)}
+  .kv:last-child{border-bottom:none}
+  .kv span:last-child{color:var(--muted)}
+
+  /* ---------- التذييل ---------- */
+  footer{
+    flex-shrink:0;padding:9px 11px calc(9px + var(--safe-b));
+    background:var(--panel);border-top:1px solid var(--line);
+    display:flex;gap:7px;align-items:flex-end;
+  }
+  footer.hide{display:none}
+  #box{
+    flex:1;background:var(--bg);border:1px solid var(--line);border-radius:21px;
+    padding:11px 15px;color:var(--text);font-size:.94rem;resize:none;
+    max-height:118px;line-height:1.5;outline:none;
+  }
+  #box:focus{border-color:var(--accent)}
+  #box::placeholder{color:var(--muted)}
+  .icobtn{
+    width:42px;height:42px;flex-shrink:0;border-radius:50%;border:1px solid var(--line);
+    background:var(--bg);color:var(--accent);font-size:18px;cursor:pointer;
+    display:grid;place-items:center;
+  }
+  .icobtn:active{transform:scale(.9)}
+  .icobtn.rec{background:#dc2626;color:#fff;border-color:#dc2626;animation:pulse 1.1s infinite}
+  @keyframes pulse{50%{opacity:.55}}
+  #send{
+    width:42px;height:42px;flex-shrink:0;border:none;border-radius:50%;
+    background:var(--accent);color:#062a35;font-size:18px;cursor:pointer;
+    display:grid;place-items:center;
+  }
+  #send:disabled{opacity:.4}
+  #send:active{transform:scale(.9)}
+  #file{display:none}
+  .rectimer{font-size:.8rem;color:#f87171;align-self:center;padding:0 4px;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<!-- ============ القفل ============ -->
+<div id="lock">
+  <div class="logo">M</div>
+  <h1>MORO</h1>
+  <p>مساعد شخصي للمهندس سامر</p>
+  <div class="pwrow">
+    <input id="pw" type="password" inputmode="text" placeholder="كلمة السر" autocomplete="current-password">
+    <button class="bigbtn" id="unlock">دخول</button>
+    <button class="bigbtn ghost hide" id="bio" style="display:none">الدخول بالبصمة</button>
+  </div>
+  <div id="lockmsg"></div>
+</div>
+
+<!-- ============ التطبيق ============ -->
+<header>
+  <div class="av">M</div>
+  <div class="who">
+    <b>MORO</b>
+    <span><i class="dot" id="stat"></i><em id="statx" style="font-style:normal">متصل</em></span>
+  </div>
+  <button class="hbtn" id="lockbtn">قفل</button>
+</header>
+
+<div class="tabs">
+  <button class="tab on" data-v="chat">المحادثة</button>
+  <button class="tab" data-v="gal">الوسائط</button>
+  <button class="tab" data-v="acct">الرصيد</button>
+</div>
+
+<div class="view on" id="v-chat"><div id="log"></div></div>
+<div class="view" id="v-gal"><div id="gal"></div></div>
+<div class="view" id="v-acct">
+  <div id="acct">
+    <div class="card">
+      <h3>رصيد النقاط</h3>
+      <div class="big" id="cred">—</div>
+    </div>
+    <div class="card" id="acctinfo"></div>
+  </div>
+</div>
+
+<footer id="bar">
+  <input type="file" id="file" accept="image/*,audio/*">
+  <button class="icobtn" id="att" title="إرفاق">&#128206;</button>
+  <button class="icobtn" id="mic" title="تسجيل صوت">&#127908;</button>
+  <span class="rectimer" id="rectime" style="display:none">0:00</span>
+  <textarea id="box" rows="1" placeholder="اكتب رسالتك..."></textarea>
+  <button id="send" aria-label="إرسال">&#10148;</button>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  /* نسخة محلية بلا سيرفر: كل شيء يُحفظ على جهازك (IndexedDB + localStorage).
+     كلمة السر تُقارن بـhash محفوظ محلياً — لا تُخزَّن نصاً. */
+
+  var PW_SALT='25d8fdfc650c0f038b01fdb1257a4d08';
+  var PW_HASH='0ce676be4f8d595eed5b66646969d8f2e6b3a1ebb251f62273de25c3f854eafa';
+
+  function q(id){ return document.getElementById(id); }
+  function now(){
+    var d=new Date(),h=d.getHours(),m=String(d.getMinutes()).padStart(2,'0');
+    var am=h<12?'ص':'م',x=h%12; if(!x)x=12; return x+':'+m+' '+am;
+  }
+  function fmtTs(iso){ try{
+    var d=new Date(iso),h=d.getHours(),m=String(d.getMinutes()).padStart(2,'0');
+    var am=h<12?'ص':'م',x=h%12; if(!x)x=12; return x+':'+m+' '+am;
+  }catch(e){ return ''; } }
+  function scroll(){ var v=q('v-chat'); v.scrollTop=v.scrollHeight; }
+  function hex(buf){ return Array.prototype.map.call(new Uint8Array(buf),function(b){
+    return ('00'+b.toString(16)).slice(-2); }).join(''); }
+  function unhex(h){ var a=new Uint8Array(h.length/2);
+    for(var i=0;i<a.length;i++) a[i]=parseInt(h.substr(i*2,2),16); return a; }
+
+  /* ---------- تشفير كلمة السر (PBKDF2 مطابق للسيرفر) ---------- */
+  function derive(pw){
+    if(!(window.crypto&&crypto.subtle)) return Promise.reject(new Error('nocrypto'));
+    return crypto.subtle.importKey('raw',new TextEncoder().encode(pw),{name:'PBKDF2'},false,['deriveBits'])
+      .then(function(k){
+        return crypto.subtle.deriveBits(
+          {name:'PBKDF2',salt:unhex(PW_SALT),iterations:100000,hash:'SHA-256'},k,256);
+      }).then(hex);
+  }
+
+  /* ---------- التخزين المحلي ---------- */
+  var DB=null;
+  function db(){
+    if(DB) return Promise.resolve(DB);
+    return new Promise(function(res,rej){
+      var r=indexedDB.open('moro',1);
+      r.onupgradeneeded=function(e){
+        var d=e.target.result;
+        if(!d.objectStoreNames.contains('msgs')) d.createObjectStore('msgs',{keyPath:'id',autoIncrement:true});
+        if(!d.objectStoreNames.contains('media')) d.createObjectStore('media',{keyPath:'id',autoIncrement:true});
+      };
+      r.onsuccess=function(e){ DB=e.target.result; res(DB); };
+      r.onerror=function(){ rej(r.error); };
+    });
+  }
+  function put(store,obj){
+    return db().then(function(d){ return new Promise(function(res,rej){
+      var t=d.transaction(store,'readwrite'), rq=t.objectStore(store).add(obj);
+      rq.onsuccess=function(){ res(rq.result); }; rq.onerror=function(){ rej(rq.error); };
+    });});
+  }
+  function all(store){
+    return db().then(function(d){ return new Promise(function(res,rej){
+      var t=d.transaction(store,'readonly'), rq=t.objectStore(store).getAll();
+      rq.onsuccess=function(){ res(rq.result||[]); }; rq.onerror=function(){ rej(rq.error); };
+    });}).catch(function(){ return []; });
+  }
+
+  /* ---------- الفقاعات ---------- */
+  var log=q('log'), box=q('box');
+  function bubble(role,text,blob,type,ts){
+    var row=document.createElement('div');
+    row.className='row '+(role==='me'?'me':'moro');
+    var w=document.createElement('div'), b=document.createElement('div');
+    b.className='msg';
+    if(text) b.textContent=text;              // نص لا HTML — حماية XSS
+    if(blob){
+      var url=URL.createObjectURL(blob);
+      if(type&&type.indexOf('image')===0){
+        var im=document.createElement('img'); im.src=url; im.alt='صورة'; b.appendChild(im);
+      } else {
+        var au=document.createElement('audio'); au.controls=true; au.src=url; b.appendChild(au);
+      }
+    }
+    var t=document.createElement('div'); t.className='t'; t.textContent=ts?fmtTs(ts):now();
+    w.appendChild(b); w.appendChild(t); row.appendChild(w); log.appendChild(row); scroll();
+    return row;
+  }
+  function note(txt){
+    var d=document.createElement('div'); d.className='note'; d.textContent=txt;
+    log.appendChild(d); scroll();
+  }
+  function typing(){
+    var r=document.createElement('div'); r.className='row moro';
+    r.innerHTML='<div class="msg"><div class="typing"><i></i><i></i><i></i></div></div>';
+    log.appendChild(r); scroll(); return r;
+  }
+
+  /* ---------- القفل ---------- */
+  function lockUp(m){
+    try{ sessionStorage.removeItem('moro_open'); }catch(e){}
+    q('lock').classList.remove('hide'); q('lockmsg').textContent=m||'';
+  }
+  function opened(){
+    q('lock').classList.add('hide'); q('pw').value=''; q('lockmsg').textContent='';
+    try{ sessionStorage.setItem('moro_open','1'); }catch(e){}
+    loadHistory(); showCredit();
+  }
+  q('unlock').addEventListener('click',doUnlock);
+  q('pw').addEventListener('keydown',function(e){ if(e.key==='Enter') doUnlock(); });
+  function doUnlock(){
+    var v=q('pw').value;
+    if(!v){ q('lockmsg').textContent='اكتب كلمة السر'; return; }
+    q('lockmsg').textContent='...';
+    derive(v).then(function(h){
+      if(h===PW_HASH) opened();
+      else q('lockmsg').textContent='كلمة السر غير صحيحة';
+    }).catch(function(){ q('lockmsg').textContent='المتصفح لا يدعم التحقق الآمن'; });
+  }
+  q('lockbtn').addEventListener('click',function(){
+    log.innerHTML=''; q('gal').innerHTML=''; lockUp('');
+  });
+
+  /* ---------- السجل ---------- */
+  function loadHistory(){
+    log.innerHTML='';
+    all('msgs').then(function(rows){
+      if(!rows.length){
+        bubble('moro','أنا مورو، مساعد شخصي للمهندس سامر.\n\nهذه نسخة تعمل بلا سيرفر: محادثاتك ووسائطك محفوظة **على جهازك** فقط، ولا ترفع لأي مكان. تقدر تبعت صورة أو تسجّل صوت وتلاقيهم بشريحة الوسائط.',null,null,null);
+      } else {
+        rows.forEach(function(m){
+          bubble(m.role==='me'?'me':'moro',m.text,m.blob,m.type,m.ts);
+        });
+      }
+      loadGallery();
+    });
+  }
+  function loadGallery(){
+    all('media').then(function(rows){
+      var g=q('gal'); g.innerHTML='';
+      if(!rows.length){
+        var e=document.createElement('div'); e.className='note'; e.style.gridColumn='1/-1';
+        e.textContent='ما في وسائط بعد. ابعت صورة أو سجّل صوت من شاشة المحادثة.';
+        g.appendChild(e); return;
+      }
+      rows.slice().reverse().forEach(function(m){
+        var c=document.createElement('div'); c.className='cell';
+        var url=URL.createObjectURL(m.blob);
+        if(m.type&&m.type.indexOf('image')===0){
+          var im=document.createElement('img'); im.src=url; im.loading='lazy'; c.appendChild(im);
+          c.addEventListener('click',function(){ window.open(url,'_blank'); });
+        } else {
+          c.textContent='🎤 صوت';
+          c.addEventListener('click',function(){ new Audio(url).play(); });
+        }
+        g.appendChild(c);
+      });
+    });
+  }
+  function showCredit(){
+    q('cred').textContent='—';
+    var i=q('acctinfo'); i.innerHTML='';
+    [['الحالة','نسخة محلية بلا سيرفر'],
+     ['الرصيد','يتطلب ربط السيرفر'],
+     ['التخزين','على جهازك فقط']].forEach(function(r){
+      var kv=document.createElement('div'); kv.className='kv';
+      var a=document.createElement('span'); a.textContent=r[0];
+      var b=document.createElement('span'); b.textContent=r[1];
+      kv.appendChild(a); kv.appendChild(b); i.appendChild(kv);
+    });
+  }
+
+  /* ---------- الإرسال ---------- */
+  function autosize(){ box.style.height='auto'; box.style.height=Math.min(box.scrollHeight,118)+'px'; }
+  box.addEventListener('input',autosize);
+  box.addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); submit(); } });
+  q('send').addEventListener('click',submit);
+  function submit(){
+    var v=box.value.trim(); if(!v) return;
+    var ts=new Date().toISOString();
+    bubble('me',v,null,null,null); box.value=''; autosize();
+    put('msgs',{role:'me',text:v,ts:ts});
+    var ty=typing();
+    setTimeout(function(){
+      ty.remove();
+      var rep='وصلتني رسالتك وحفظتها على جهازك.\n\nهذه النسخة تعمل بلا سيرفر، فما بقدر أرد عليك بعقلي من هنا بعد. بعد ربط السيرفر أرد فعلياً.';
+      bubble('moro',rep,null,null,null);
+      put('msgs',{role:'moro',text:rep,ts:new Date().toISOString()});
+    },650);
+  }
+
+  /* ---------- وسائط ---------- */
+  q('att').addEventListener('click',function(){ q('file').click(); });
+  q('file').addEventListener('change',function(e){
+    var f=e.target.files&&e.target.files[0];
+    if(f) save(f,f.type||'application/octet-stream');
+    e.target.value='';
+  });
+  function save(blob,type){
+    if(blob.size>8*1024*1024){ note('الملف كبير (أكثر من 8 ميغا).'); return; }
+    var ts=new Date().toISOString();
+    bubble('me','',blob,type,null);
+    put('msgs',{role:'me',text:'',blob:blob,type:type,ts:ts});
+    put('media',{blob:blob,type:type,ts:ts}).then(loadGallery);
+    var ty=typing();
+    setTimeout(function(){
+      ty.remove();
+      var rep=type.indexOf('image')===0
+        ? 'وصلتني الصورة وحفظتها بالمعرض على جهازك. تحليل الصور يحتاج ربط السيرفر.'
+        : 'وصلني التسجيل وحفظته بالمعرض على جهازك. تحويل الصوت لنص يحتاج ربط السيرفر.';
+      bubble('moro',rep,null,null,null);
+      put('msgs',{role:'moro',text:rep,ts:new Date().toISOString()});
+    },650);
+  }
+
+  /* ---------- تسجيل صوت ---------- */
+  var rec=null,chunks=[],tm=null,sec=0;
+  q('mic').addEventListener('click',function(){
+    if(rec&&rec.state==='recording'){ stop(); return; }
+    if(!navigator.mediaDevices||!window.MediaRecorder){ note('التسجيل غير مدعوم على هذا الجهاز.'); return; }
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+      chunks=[];
+      try{ rec=new MediaRecorder(st); }catch(e){ note('تعذّر بدء التسجيل.'); return; }
+      rec.ondataavailable=function(e){ if(e.data&&e.data.size) chunks.push(e.data); };
+      rec.onstop=function(){
+        st.getTracks().forEach(function(t){ t.stop(); });
+        q('mic').classList.remove('rec'); q('rectime').style.display='none'; clearInterval(tm);
+        if(chunks.length) save(new Blob(chunks,{type:'audio/webm'}),'audio/webm');
+      };
+      rec.start(); q('mic').classList.add('rec');
+      sec=0; q('rectime').textContent='0:00'; q('rectime').style.display='block';
+      tm=setInterval(function(){
+        sec++; q('rectime').textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
+        if(sec>=120) stop();
+      },1000);
+    }).catch(function(){ note('لم يُسمح بالوصول للمايكروفون.'); });
+  });
+  function stop(){ if(rec&&rec.state==='recording') rec.stop(); }
+
+  /* ---------- الشرائح ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(t){
+    t.addEventListener('click',function(){
+      document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('on'); });
+      document.querySelectorAll('.view').forEach(function(x){ x.classList.remove('on'); });
+      t.classList.add('on');
+      var v=t.getAttribute('data-v');
+      q('v-'+v).classList.add('on');
+      q('bar').classList.toggle('hide',v!=='chat');
+      if(v==='gal') loadGallery();
+      if(v==='acct') showCredit();
+    });
+  });
+
+  /* ---------- بدء ---------- */
+  q('statx').textContent='محلي';
+  q('stat').className='dot off';
+  try{ if(sessionStorage.getItem('moro_open')==='1') opened(); }catch(e){}
+  if(window.visualViewport) window.visualViewport.addEventListener('resize',scroll);
+})();
+</script>
+</body>
+</html>
