@@ -206,6 +206,7 @@
   <input type="file" id="file" accept="image/*,audio/*">
   <button class="icobtn" id="att" title="إرفاق">&#128206;</button>
   <button class="icobtn" id="mic" title="تسجيل صوت">&#127908;</button>
+  <button class="icobtn" id="stt" title="تحويل كلامك لنص">&#128483;</button>
   <span class="rectimer" id="rectime" style="display:none">0:00</span>
   <textarea id="box" rows="1" placeholder="اكتب رسالتك..."></textarea>
   <button id="send" aria-label="إرسال">&#10148;</button>
@@ -443,6 +444,35 @@
     }).catch(function(){ note('لم يُسمح بالوصول للمايكروفون.'); });
   });
   function stop(){ if(rec&&rec.state==='recording') rec.stop(); }
+
+
+  /* ---------- تحويل الكلام إلى نص (مجاناً في المتصفح) ---------- */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var sr = null, srOn = false;
+  if (!SR) { q('stt').style.display = 'none'; }
+  q('stt').addEventListener('click', function(){
+    if (!SR) { note('تحويل الكلام لنص غير مدعوم على هذا المتصفح. استخدم كروم.'); return; }
+    if (srOn && sr) { try { sr.stop(); } catch(e) {} return; }
+    try { sr = new SR(); } catch(e) { note('تعذّر بدء التعرف على الكلام.'); return; }
+    sr.lang = 'ar-SA';
+    sr.continuous = false;
+    sr.interimResults = true;
+    sr.onstart = function(){ srOn = true; q('stt').classList.add('rec'); };
+    sr.onresult = function(e){
+      var txt = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) txt += e.results[i][0].transcript;
+      box.value = txt; autosize();
+    };
+    sr.onerror = function(ev){
+      srOn = false; q('stt').classList.remove('rec');
+      var er = ev && ev.error;
+      if (er === 'not-allowed') note('لم يُسمح بالوصول للمايكروفون.');
+      else if (er === 'no-speech') note('ما سمعت صوت. جرّب مرة ثانية.');
+      else note('تعذّر التعرف على الكلام.');
+    };
+    sr.onend = function(){ srOn = false; q('stt').classList.remove('rec'); box.focus(); };
+    try { sr.start(); } catch(e) { note('تعذّر بدء التعرف على الكلام.'); }
+  });
 
   /* ---------- الشرائح ---------- */
   Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(t){
