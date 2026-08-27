@@ -173,6 +173,20 @@
   .tot{display:flex;justify-content:space-between;font-size:1.05rem;font-weight:700;
        padding-top:8px;margin-top:6px;border-top:1px solid var(--line)}
   .tot b{color:var(--gold)}
+  .reqf{margin-top:10px;display:none}
+  .reqf.on{display:block}
+  .reqf label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:5px}
+  .reqf .req{color:var(--red);font-weight:700}
+  .reqf input{
+    width:100%;font:inherit;font-size:.9rem;padding:11px 12px;
+    background:#1d1712;color:var(--text);border:1px solid var(--line);border-radius:10px;
+  }
+  .reqf input:focus{outline:none;border-color:var(--gold)}
+  .reqf input::placeholder{color:#6e6055}
+  .reqf.bad input{border-color:var(--red)}
+  .reqf .warn{display:none;color:var(--red);font-size:.75rem;margin-top:5px;line-height:1.6}
+  .reqf.bad .warn{display:block}
+  #order.off{opacity:.5}
   #order{
     display:block;width:100%;margin-top:11px;padding:14px;border:none;
     border-radius:12px;background:var(--green);color:#04310f;
@@ -217,6 +231,11 @@
   <div class="sum disc" id="discrow" style="display:none"><span>وفّرت من العروض</span><b id="discval">٠.٠٠</b></div>
   <div class="sum" id="delrow" style="display:none"><span>التوصيل</span><b id="delval">١.٥٠</b></div>
   <div class="tot"><span id="totlbl">المجموع</span><b id="tot">٠.٠٠</b></div>
+  <div class="reqf" id="tablewrap">
+    <label for="tableno">رقم الطاولة <span class="req">*</span></label>
+    <input id="tableno" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="اكتب رقم طاولتك">
+    <div class="warn" id="tablewarn">لازم تكتب رقم الطاولة حتى يعرف المطعم وين يوصّل طلبك</div>
+  </div>
   <a id="order" href="#" target="_blank" rel="noopener">أرسل الطلب على واتساب</a>
 </div>
 
@@ -272,6 +291,25 @@
     });
   }
 
+  /* ---------- خانة رقم الطاولة ---------- */
+  var tableEl   = document.getElementById('tableno');
+  var tableWrap = document.getElementById('tablewrap');
+
+  tableEl.addEventListener('input', function(){
+    if (tableEl.value.trim()) tableWrap.classList.remove('bad');
+    renderCart();
+  });
+
+  document.getElementById('order').addEventListener('click', function(e){
+    if (!tableOk()){
+      e.preventDefault();
+      tableWrap.classList.add('on');
+      tableWrap.classList.add('bad');
+      tableEl.focus();
+      try { tableEl.scrollIntoView({ block:'center' }); } catch(err){}
+    }
+  });
+
   /* ---------- حسابات السلة ---------- */
   function itemsCount(){ var c=0; for (var k in cart) c += cart[k].qty; return c; }
   function subtotal(){ var t=0; for (var k in cart) t += cart[k].price * cart[k].qty; return t; }
@@ -296,7 +334,7 @@
     }
     bar.classList.add('on');
     oldbar.style.display = 'none';
-    document.body.style.paddingBottom = '235px';
+    document.body.style.paddingBottom = (mode === 'hall' ? 320 : 235) + 'px';
 
     document.getElementById('cnt').textContent = toAr(n);
 
@@ -341,14 +379,26 @@
     } else {
       lines.push('*الإجمالي: ' + money(total) + '*');
     }
-    if (mode === 'hall'){ lines.push(''); lines.push('رقم الطاولة: '); }
+    if (mode === 'hall'){
+      lines.push('');
+      lines.push('رقم الطاولة: ' + toAr(tableEl.value.trim()));
+    }
 
     document.getElementById('order').href =
       'https://wa.me/' + (C.whatsapp || '') + '?text=' + encodeURIComponent(lines.join('\n'));
+
+    // خانة رقم الطاولة — إجبارية في طلب الصالة فقط
+    tableWrap.classList.toggle('on', mode === 'hall');
+    if (mode !== 'hall') tableWrap.classList.remove('bad');
+    document.getElementById('order').classList.toggle('off', !tableOk());
+  }
+
+  function tableOk(){
+    return mode !== 'hall' || tableEl.value.trim().length > 0;
   }
 
   /* ---------- عناصر الصنف ---------- */
-  var NOTE_CHIPS = ['بدون مخلل','بدون بصل','بدون سكر','حار','زيادة ثومية','بدون ثوم'];
+  var NOTE_CHIPS = ['بدون مخلل','بدون بصل','حار','زيادة ثومية','بدون ثوم','بدون كاتشب'];
 
   function addTo(key, ctx){
     if (!cart[key]) cart[key] = { name:ctx.name, price:ctx.price, was:ctx.was, qty:0, note:ctx.noteEl.value };
@@ -488,7 +538,7 @@
       ta.id = 'note_' + gi + '_' + ii;
       ta.rows = 2;
       ta.maxLength = 200;
-      ta.placeholder = 'مثال: بدون مخلل · بدون سكر · زيادة ثومية';
+      ta.placeholder = 'مثال: بدون مخلل · زيادة ثومية · حار';
       noteWrap.appendChild(lab); noteWrap.appendChild(ta);
 
       var chips = document.createElement('div');
