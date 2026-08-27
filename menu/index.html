@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1410">
-<title>مطعم الأصيل — المنيو</title>
-<meta name="description" content="منيو إلكتروني — مطعم الأصيل، عمّان">
+<title>منيو إلكتروني</title>
+<meta name="description" content="منيو إلكتروني — اطلب مباشرة من المطعم">
 <style>
   :root{
     --bg:#1a1410; --card:#241c17; --line:#3a2e26;
     --text:#f5efe8; --muted:#a99584;
-    --gold:#d4a24c; --green:#25d366;
+    --gold:#d4a24c; --green:#25d366; --red:#e05a4a;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   body{
@@ -38,6 +38,8 @@
     padding:5px 12px;border-radius:20px;font-size:.79rem;
   }
   .open i{width:7px;height:7px;border-radius:50%;background:var(--green)}
+  .open.shut{background:rgba(224,90,74,.13);color:var(--red);border-color:rgba(224,90,74,.3)}
+  .open.shut i{background:var(--red)}
 
   nav{
     position:sticky;top:0;z-index:20;display:flex;gap:8px;
@@ -60,10 +62,11 @@
     border-right:3px solid var(--gold);
   }
   .item{
-    display:flex;gap:13px;align-items:flex-start;
     background:var(--card);border:1px solid var(--line);
     border-radius:14px;padding:14px;margin-bottom:11px;
   }
+  .item.hasoffer{border-color:rgba(224,90,74,.55)}
+  .row{display:flex;gap:13px;align-items:flex-start}
   .ico{
     width:52px;height:52px;flex-shrink:0;border-radius:11px;
     background:#332720;display:grid;place-items:center;font-size:25px;
@@ -73,12 +76,33 @@
   .info p{color:var(--muted);font-size:.82rem;line-height:1.6}
   .price{
     flex-shrink:0;color:var(--gold);font-weight:700;font-size:1rem;
-    white-space:nowrap;align-self:center;
+    white-space:nowrap;align-self:center;text-align:center;line-height:1.5;
   }
+  .price s{display:block;color:var(--muted);font-weight:400;font-size:.76rem}
   .badge{
     display:inline-block;background:rgba(212,162,76,.16);color:var(--gold);
     font-size:.68rem;padding:2px 7px;border-radius:5px;margin-right:5px;
   }
+  .badge.off{background:rgba(224,90,74,.18);color:var(--red)}
+
+  /* ---------- خانة الملاحظات ---------- */
+  .noteWrap{display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+  .noteWrap.on{display:block}
+  .noteWrap label{display:block;color:var(--muted);font-size:.78rem;margin-bottom:6px}
+  .noteWrap textarea{
+    width:100%;font:inherit;font-size:.85rem;resize:vertical;min-height:44px;
+    background:#1d1712;color:var(--text);border:1px solid var(--line);
+    border-radius:10px;padding:10px 12px;line-height:1.6;
+  }
+  .noteWrap textarea:focus{outline:none;border-color:var(--gold)}
+  .noteWrap textarea::placeholder{color:#6e6055}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chips button{
+    font:inherit;font-size:.74rem;cursor:pointer;padding:5px 10px;
+    background:#2e241d;color:var(--muted);
+    border:1px solid var(--line);border-radius:16px;
+  }
+  .chips button:active{background:var(--gold);color:#2b1c06}
 
   .bar{
     position:fixed;bottom:0;left:0;right:0;z-index:30;
@@ -99,11 +123,15 @@
     border-radius:11px;padding:12px;margin:0 14px 18px;
     color:var(--gold);font-size:.79rem;text-align:center;line-height:1.8;
   }
+  .promo{
+    background:linear-gradient(135deg,rgba(224,90,74,.2),rgba(212,162,76,.15));
+    border:1px solid rgba(224,90,74,.45);
+    border-radius:11px;padding:12px;margin:0 14px 14px;
+    color:#ffd9d2;font-size:.86rem;text-align:center;line-height:1.7;font-weight:600;
+  }
 
   /* ---------- نظام الطلب ---------- */
-  .mode{
-    display:flex;gap:8px;padding:0 14px 4px;
-  }
+  .mode{display:flex;gap:8px;padding:0 14px 4px}
   .mode button{
     flex:1;font:inherit;font-size:.82rem;cursor:pointer;padding:11px 6px;
     background:var(--card);color:var(--muted);
@@ -124,9 +152,7 @@
     font-weight:700;align-self:center;display:grid;place-items:center;
   }
   .add:active{transform:scale(.9)}
-  .qty{
-    flex-shrink:0;display:flex;align-items:center;gap:8px;align-self:center;
-  }
+  .qty{flex-shrink:0;display:flex;align-items:center;gap:8px;align-self:center}
   .qty button{
     width:29px;height:29px;border-radius:8px;cursor:pointer;font-size:17px;
     background:var(--card);color:var(--gold);border:1px solid var(--gold);
@@ -143,6 +169,7 @@
   #cartbar.on{display:block}
   .sum{display:flex;justify-content:space-between;font-size:.88rem;margin-bottom:4px}
   .sum b{color:var(--gold)}
+  .sum.disc b{color:var(--green)}
   .tot{display:flex;justify-content:space-between;font-size:1.05rem;font-weight:700;
        padding-top:8px;margin-top:6px;border-top:1px solid var(--line)}
   .tot b{color:var(--gold)}
@@ -157,19 +184,15 @@
 <body>
 
 <header>
-  <div class="logo">🍽️</div>
-  <h1>مطعم الأصيل</h1>
-  <div class="tag">مأكولات شرقية · شاورما · مشاوي</div>
-  <div class="meta">
-    الدوار السابع، عمّان<br>
-    يومياً ١١:٠٠ ص – ١٢:٠٠ م
-  </div>
-  <div class="open"><i></i> مفتوح الآن</div>
+  <div class="logo" id="hLogo">🍽️</div>
+  <h1 id="hName">—</h1>
+  <div class="tag" id="hTag"></div>
+  <div class="meta" id="hMeta"></div>
+  <div class="open" id="hOpen"><i></i> <span>مفتوح الآن</span></div>
 </header>
 
-<div class="demo">
-  هذا نموذج توضيحي — الأسماء والأسعار تجريبية
-</div>
+<div class="demo" id="demoNote"></div>
+<div class="promo" id="promo" style="display:none"></div>
 
 <div class="mode" id="mode">
   <button data-m="hall" class="on">في الصالة<small>اطلب من طاولتك</small></button>
@@ -184,85 +207,132 @@
 <nav id="nav"></nav>
 <main id="main"></main>
 
+<div class="bar" id="bar">
+  <a class="wa" id="waLink" href="#" target="_blank" rel="noopener">تواصل على واتساب</a>
+  <a class="call" id="telLink" href="#">اتصل</a>
+</div>
+
 <div id="cartbar">
   <div class="sum"><span>عدد الأصناف</span><b id="cnt">٠</b></div>
-  <div class="sum" id="delrow" style="display:none"><span>التوصيل</span><b id="delval">١.٥٠ د.أ</b></div>
-  <div class="tot"><span id="totlbl">المجموع</span><b id="tot">٠.٠٠ د.أ</b></div>
+  <div class="sum disc" id="discrow" style="display:none"><span>وفّرت من العروض</span><b id="discval">٠.٠٠</b></div>
+  <div class="sum" id="delrow" style="display:none"><span>التوصيل</span><b id="delval">١.٥٠</b></div>
+  <div class="tot"><span id="totlbl">المجموع</span><b id="tot">٠.٠٠</b></div>
   <a id="order" href="#" target="_blank" rel="noopener">أرسل الطلب على واتساب</a>
 </div>
 
-<footer>
-  مطعم الأصيل · عمّان<br>
-  منيو إلكتروني
-</footer>
+<footer id="foot"></footer>
 
+<script src="menu-data.js"></script>
 <script>
 (function(){
+  var C = window.MENU_CONFIG;
+  if (!C){ document.getElementById('hName').textContent = 'خطأ: ملف المنيو غير موجود'; return; }
 
-  /* ============ نظام الطلب ============ */
-  var WA_NUM   = '962790000000';   // رقم واتساب المطعم
-  var DELIVERY = 1.50;             // سعر التوصيل
-  var CUR      = ' د.أ';
-
-  var cart = {};                   // name -> {price, qty}
+  var CUR = C.currency || ' د.أ';
+  var DEC = typeof C.decimals === 'number' ? C.decimals : 2;
+  var DELIVERY = typeof C.delivery === 'number' ? C.delivery : 0;
+  var cart = {};              // key -> {name, price, qty, was, note}
   var mode = 'hall';
 
   var AR = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
-  function toAr(str){
-    return String(str).replace(/[0-9]/g, function(d){ return AR[+d]; });
+  function toAr(s){ return String(s).replace(/[0-9]/g, function(d){ return AR[+d]; }); }
+  function money(n){
+    var v = n.toFixed(DEC);
+    if (DEC === 0) v = String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '٫');
+    return toAr(v) + CUR;
   }
-  function money(n){ return toAr(n.toFixed(2)) + CUR; }
 
-  // أسعار رقمية موازية للعرض العربي
-  function priceOf(item){ return item.v; }
-
-  function itemsCount(){
-    var c = 0;
-    for (var k in cart) c += cart[k].qty;
-    return c;
+  /* ---------- ترويسة ---------- */
+  document.title = C.name + ' — المنيو';
+  document.getElementById('hLogo').textContent = C.logo || '🍽️';
+  document.getElementById('hName').textContent = C.name || '';
+  document.getElementById('hTag').textContent = C.tagline || '';
+  document.getElementById('hMeta').innerHTML =
+    (C.address ? esc(C.address) + '<br>' : '') + (C.hours ? esc(C.hours) : '');
+  var openEl = document.getElementById('hOpen');
+  if (C.isOpen === false){
+    openEl.className = 'open shut';
+    openEl.querySelector('span').textContent = 'مغلق الآن';
   }
-  function subtotal(){
-    var t = 0;
-    for (var k in cart) t += cart[k].price * cart[k].qty;
+  var dn = document.getElementById('demoNote');
+  if (C.demoNote) dn.textContent = C.demoNote; else dn.style.display = 'none';
+  if (C.promoBanner){
+    var pb = document.getElementById('promo');
+    pb.textContent = C.promoBanner;
+    pb.style.display = 'block';
+  }
+  document.getElementById('foot').innerHTML =
+    esc(C.name || '') + '<br>منيو إلكتروني — الطلب مباشر بلا عمولة';
+  document.getElementById('waLink').href = 'https://wa.me/' + (C.whatsapp || '');
+  document.getElementById('telLink').href = 'tel:+' + (C.phone || C.whatsapp || '');
+
+  function esc(s){
+    return String(s).replace(/[&<>"]/g, function(ch){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[ch];
+    });
+  }
+
+  /* ---------- حسابات السلة ---------- */
+  function itemsCount(){ var c=0; for (var k in cart) c += cart[k].qty; return c; }
+  function subtotal(){ var t=0; for (var k in cart) t += cart[k].price * cart[k].qty; return t; }
+  function savings(){
+    var t=0;
+    for (var k in cart){
+      var it = cart[k];
+      if (typeof it.was === 'number' && it.was > it.price) t += (it.was - it.price) * it.qty;
+    }
     return t;
   }
 
   function renderCart(){
     var n = itemsCount();
     var bar = document.getElementById('cartbar');
-    if (!n){ bar.classList.remove('on'); document.body.style.paddingBottom='86px'; return; }
+    var oldbar = document.getElementById('bar');
+    if (!n){
+      bar.classList.remove('on');
+      oldbar.style.display = 'flex';
+      document.body.style.paddingBottom = '86px';
+      return;
+    }
     bar.classList.add('on');
-    document.body.style.paddingBottom = '210px';
+    oldbar.style.display = 'none';
+    document.body.style.paddingBottom = '235px';
 
     document.getElementById('cnt').textContent = toAr(n);
 
-    var sub = subtotal();
+    var sub = subtotal(), sav = savings(), total = sub;
+
+    var discRow = document.getElementById('discrow');
+    if (sav > 0){
+      discRow.style.display = 'flex';
+      document.getElementById('discval').textContent = '− ' + money(sav);
+    } else discRow.style.display = 'none';
+
     var delRow = document.getElementById('delrow');
-    var total = sub;
     if (mode === 'del'){
       delRow.style.display = 'flex';
       document.getElementById('delval').textContent = money(DELIVERY);
       total = sub + DELIVERY;
-    } else {
-      delRow.style.display = 'none';
-    }
+    } else delRow.style.display = 'none';
+
     document.getElementById('tot').textContent = money(total);
+    document.getElementById('totlbl').textContent =
+      mode === 'hall' ? 'المجموع (صالة)' :
+      mode === 'pick' ? 'المجموع (استلام)' : 'المجموع مع التوصيل';
 
-    var lbl = mode === 'hall' ? 'المجموع (صالة)'
-            : mode === 'pick' ? 'المجموع (استلام)'
-            : 'المجموع مع التوصيل';
-    document.getElementById('totlbl').textContent = lbl;
-
-    // رسالة واتساب
+    /* ---------- رسالة واتساب ---------- */
     var modeTxt = mode === 'hall' ? 'طلب داخل الصالة'
                 : mode === 'pick' ? 'طلب استلام من المطعم'
                 : 'طلب توصيل';
     var lines = ['*' + modeTxt + '*', ''];
     for (var k in cart){
-      lines.push('• ' + k + ' × ' + toAr(cart[k].qty) + '  —  ' + money(cart[k].price * cart[k].qty));
+      var it = cart[k];
+      lines.push('• ' + it.name + ' × ' + toAr(it.qty) + '  —  ' + money(it.price * it.qty));
+      if (it.note && it.note.trim()) lines.push('   ↳ ملاحظة: ' + it.note.trim());
     }
     lines.push('');
     lines.push('المجموع: ' + money(sub));
+    if (sav > 0) lines.push('وفّرت من العروض: ' + money(sav));
     if (mode === 'del'){
       lines.push('التوصيل: ' + money(DELIVERY));
       lines.push('*الإجمالي: ' + money(total) + '*');
@@ -271,35 +341,41 @@
     } else {
       lines.push('*الإجمالي: ' + money(total) + '*');
     }
-    if (mode === 'hall'){
-      lines.push('');
-      lines.push('رقم الطاولة: ');
-    }
+    if (mode === 'hall'){ lines.push(''); lines.push('رقم الطاولة: '); }
+
     document.getElementById('order').href =
-      'https://wa.me/' + WA_NUM + '?text=' + encodeURIComponent(lines.join('\n'));
+      'https://wa.me/' + (C.whatsapp || '') + '?text=' + encodeURIComponent(lines.join('\n'));
   }
 
-  function addTo(name, price, box){
-    if (!cart[name]) cart[name] = { price: price, qty: 0 };
-    cart[name].qty++;
-    drawQty(name, box);
+  /* ---------- عناصر الصنف ---------- */
+  var NOTE_CHIPS = ['بدون مخلل','بدون بصل','بدون سكر','حار','زيادة ثومية','بدون ثوم'];
+
+  function addTo(key, ctx){
+    if (!cart[key]) cart[key] = { name:ctx.name, price:ctx.price, was:ctx.was, qty:0, note:ctx.noteEl.value };
+    cart[key].qty++;
+    ctx.noteWrap.classList.add('on');
+    drawQty(key, ctx);
     renderCart();
   }
-  function removeFrom(name, box){
-    if (!cart[name]) return;
-    cart[name].qty--;
-    if (cart[name].qty <= 0) delete cart[name];
-    drawQty(name, box);
+  function removeFrom(key, ctx){
+    if (!cart[key]) return;
+    cart[key].qty--;
+    if (cart[key].qty <= 0){
+      delete cart[key];
+      ctx.noteWrap.classList.remove('on');
+    }
+    drawQty(key, ctx);
     renderCart();
   }
-  function drawQty(name, box){
+  function drawQty(key, ctx){
+    var box = ctx.box;
     box.innerHTML = '';
-    var q = cart[name] ? cart[name].qty : 0;
+    var q = cart[key] ? cart[key].qty : 0;
     if (!q){
       var add = document.createElement('button');
       add.className = 'add'; add.textContent = '+';
-      add.setAttribute('aria-label', 'أضف ' + name);
-      add.addEventListener('click', function(){ addTo(name, box._price, box); });
+      add.setAttribute('aria-label', 'أضف ' + ctx.name);
+      add.addEventListener('click', function(){ addTo(key, ctx); });
       box.appendChild(add);
       box.className = '';
       return;
@@ -307,62 +383,36 @@
     box.className = 'qty';
     var minus = document.createElement('button'); minus.textContent = '−';
     minus.setAttribute('aria-label','أنقص');
-    minus.addEventListener('click', function(){ removeFrom(name, box); });
+    minus.addEventListener('click', function(){ removeFrom(key, ctx); });
     var num = document.createElement('b'); num.textContent = toAr(q);
     var plus = document.createElement('button'); plus.textContent = '+';
     plus.setAttribute('aria-label','أضف');
-    plus.addEventListener('click', function(){ addTo(name, box._price, box); });
+    plus.addEventListener('click', function(){ addTo(key, ctx); });
     box.appendChild(minus); box.appendChild(num); box.appendChild(plus);
   }
 
-  // أزرار نوع الطلب
+  /* ---------- أزرار نوع الطلب ---------- */
   Array.prototype.forEach.call(document.querySelectorAll('#mode button'), function(b){
     b.addEventListener('click', function(){
-      document.querySelectorAll('#mode button').forEach(function(x){ x.classList.remove('on'); });
+      Array.prototype.forEach.call(document.querySelectorAll('#mode button'), function(x){
+        x.classList.remove('on');
+      });
       b.classList.add('on');
       mode = b.getAttribute('data-m');
       renderCart();
     });
   });
 
-  var MENU = [
-    { cat:'الأكثر طلباً', items:[
-      { n:'شاورما عربي', d:'خبز عربي، دجاج مشوي، ثومية، مخلل', p:'٢.٥٠', i:'🌯', b:'الأشهر', v:2.5 },
-      { n:'مشاوي مشكل', d:'شيش طاووق، كباب، كفتة، مع أرز وسلطة', p:'٩.٠٠', i:'🍖', b:'يكفي شخصين', v:9.0 },
-      { n:'منسف أردني', d:'لحم غنم، جميد، أرز، لوز محمّص', p:'١٢.٠٠', i:'🍛', b:'طلب مسبق', v:12.0 }
-    ]},
-    { cat:'المقبلات', items:[
-      { n:'حمص بالطحينة', d:'حمص، طحينة، زيت زيتون، صنوبر', p:'١.٥٠', i:'🥣', v:1.5 },
-      { n:'متبل باذنجان', d:'باذنجان مشوي على الفحم، طحينة، ليمون', p:'١.٧٥', i:'🍆', v:1.75 },
-      { n:'فتوش', d:'خضار موسمية، خبز محمّص، دبس رمان، سمّاق', p:'٢.٠٠', i:'🥗', v:2.0 },
-      { n:'ورق عنب', d:'محشي أرز ولحمة، مطبوخ على نار هادئة', p:'٣.٥٠', i:'🍃', v:3.5 }
-    ]},
-    { cat:'الأطباق الرئيسية', items:[
-      { n:'شيش طاووق', d:'صدر دجاج متبّل، مشوي على الفحم، مع أرز', p:'٦.٥٠', i:'🍗', v:6.5 },
-      { n:'كباب لحمة', d:'لحم بقري مفروم بالبقدونس والبصل', p:'٧.٠٠', i:'🥩', v:7.0 },
-      { n:'ريش غنم', d:'ريش طرية مشوية، مع بطاطا وسلطة', p:'١١.٥٠', i:'🍖', v:11.5 },
-      { n:'صيادية سمك', d:'سمك مشوي، أرز بالبصل، طحينة', p:'٩.٥٠', i:'🐟', v:9.5 }
-    ]},
-    { cat:'المشروبات', items:[
-      { n:'عيران', d:'لبن مخفوق بالنعنع والملح', p:'١.٠٠', i:'🥛', v:1.0 },
-      { n:'ليمون بالنعنع', d:'ليمون طازج مفروم بالنعنع', p:'١.٥٠', i:'🍋', v:1.5 },
-      { n:'شاي بالنعنع', d:'شاي أحمر بالنعنع الطازج', p:'٠.٧٥', i:'🍵', v:0.75 },
-      { n:'قهوة عربية', d:'قهوة مطحونة بالهيل', p:'١.٠٠', i:'☕', v:1.0 }
-    ]},
-    { cat:'الحلويات', items:[
-      { n:'كنافة نابلسية', d:'جبنة، كنافة، قطر، فستق', p:'٣.٠٠', i:'🍮', b:'طازج يومياً', v:3.0 },
-      { n:'بقلاوة', d:'تشكيلة بقلاوة بالفستق والجوز', p:'٢.٥٠', i:'🥮', v:2.5 },
-      { n:'مهلبية', d:'مهلبية بالحليب والماء الورد', p:'١.٧٥', i:'🍨', v:1.75 }
-    ]}
-  ];
-
-  var nav = document.getElementById('nav');
+  /* ---------- بناء المنيو ---------- */
+  var nav  = document.getElementById('nav');
   var main = document.getElementById('main');
+  var GROUPS = (C.categories || []).map(function(g){
+    return { cat:g.cat, items:(g.items||[]).filter(function(it){ return !it.off; }) };
+  }).filter(function(g){ return g.items.length; });
 
   function slug(i){ return 'c' + i; }
 
-  MENU.forEach(function(group, gi){
-    // زر التصنيف
+  GROUPS.forEach(function(group, gi){
     var b = document.createElement('button');
     b.textContent = group.cat;
     if (gi === 0) b.className = 'on';
@@ -370,29 +420,40 @@
       Array.prototype.forEach.call(nav.children, function(x){ x.classList.remove('on'); });
       b.classList.add('on');
       var el = document.getElementById(slug(gi));
-      if (el) window.scrollTo({ top: el.offsetTop - 62, behavior: 'smooth' });
+      if (el) window.scrollTo({ top: el.offsetTop - 62, behavior:'smooth' });
     });
     nav.appendChild(b);
 
-    // القسم
     var sec = document.createElement('section');
     sec.id = slug(gi);
     var h = document.createElement('h2');
     h.textContent = group.cat;
     sec.appendChild(h);
 
-    group.items.forEach(function(it){
+    group.items.forEach(function(it, ii){
+      var key = gi + '|' + ii + '|' + it.n;
+      var hasOffer = typeof it.was === 'number' && it.was > it.price;
+
+      var card = document.createElement('div');
+      card.className = 'item' + (hasOffer ? ' hasoffer' : '');
+
       var row = document.createElement('div');
-      row.className = 'item';
+      row.className = 'row';
 
       var ico = document.createElement('div');
       ico.className = 'ico';
-      ico.textContent = it.i;
+      ico.textContent = it.i || '🍽️';
 
       var info = document.createElement('div');
       info.className = 'info';
       var nm = document.createElement('b');
       nm.textContent = it.n;
+      if (hasOffer){
+        var ob = document.createElement('span');
+        ob.className = 'badge off';
+        ob.textContent = 'عرض';
+        nm.appendChild(ob);
+      }
       if (it.b){
         var bd = document.createElement('span');
         bd.className = 'badge';
@@ -400,31 +461,74 @@
         nm.appendChild(bd);
       }
       var ds = document.createElement('p');
-      ds.textContent = it.d;
+      ds.textContent = it.d || '';
       info.appendChild(nm); info.appendChild(ds);
 
       var pr = document.createElement('div');
       pr.className = 'price';
-      pr.textContent = it.p + ' د.أ';
+      pr.appendChild(document.createTextNode(money(it.price)));
+      if (hasOffer){
+        var s = document.createElement('s');
+        s.textContent = money(it.was);
+        pr.appendChild(s);
+      }
 
-      var ctl = document.createElement('div');
-      ctl._price = it.v;
-      row.appendChild(ico); row.appendChild(info); row.appendChild(pr); row.appendChild(ctl);
-      drawQty(it.n, ctl);
-      sec.appendChild(row);
+      var box = document.createElement('div');
+
+      row.appendChild(ico); row.appendChild(info); row.appendChild(pr); row.appendChild(box);
+      card.appendChild(row);
+
+      /* خانة الملاحظات — غير إجبارية، تظهر بعد الإضافة */
+      var noteWrap = document.createElement('div');
+      noteWrap.className = 'noteWrap';
+      var lab = document.createElement('label');
+      lab.textContent = 'هل هناك أي ملاحظات أو إضافات؟ (اختياري)';
+      lab.setAttribute('for', 'note_' + gi + '_' + ii);
+      var ta = document.createElement('textarea');
+      ta.id = 'note_' + gi + '_' + ii;
+      ta.rows = 2;
+      ta.maxLength = 200;
+      ta.placeholder = 'مثال: بدون مخلل · بدون سكر · زيادة ثومية';
+      noteWrap.appendChild(lab); noteWrap.appendChild(ta);
+
+      var chips = document.createElement('div');
+      chips.className = 'chips';
+      NOTE_CHIPS.forEach(function(txt){
+        var cb = document.createElement('button');
+        cb.type = 'button';
+        cb.textContent = txt;
+        cb.addEventListener('click', function(){
+          var cur = ta.value.trim();
+          if (cur.indexOf(txt) !== -1) return;
+          ta.value = cur ? cur + '، ' + txt : txt;
+          if (cart[key]) cart[key].note = ta.value;
+          renderCart();
+        });
+        chips.appendChild(cb);
+      });
+      noteWrap.appendChild(chips);
+      card.appendChild(noteWrap);
+
+      var ctx = { name:it.n, price:it.price, was:it.was, box:box, noteEl:ta, noteWrap:noteWrap };
+      ta.addEventListener('input', function(){
+        if (cart[key]) { cart[key].note = ta.value; renderCart(); }
+      });
+
+      drawQty(key, ctx);
+      sec.appendChild(card);
     });
 
     main.appendChild(sec);
   });
 
-  // تمييز التصنيف الظاهر أثناء التمرير
+  /* ---------- تمييز التصنيف أثناء التمرير ---------- */
   var ticking = false;
   window.addEventListener('scroll', function(){
     if (ticking) return;
     ticking = true;
     requestAnimationFrame(function(){
       var y = window.scrollY + 110, best = 0;
-      MENU.forEach(function(_, gi){
+      GROUPS.forEach(function(_, gi){
         var el = document.getElementById(slug(gi));
         if (el && el.offsetTop <= y) best = gi;
       });
@@ -434,6 +538,8 @@
       ticking = false;
     });
   }, { passive:true });
+
+  renderCart();
 })();
 </script>
 </body>
