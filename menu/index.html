@@ -99,6 +99,59 @@
     border-radius:11px;padding:12px;margin:0 14px 18px;
     color:var(--gold);font-size:.79rem;text-align:center;line-height:1.8;
   }
+
+  /* ---------- نظام الطلب ---------- */
+  .mode{
+    display:flex;gap:8px;padding:0 14px 4px;
+  }
+  .mode button{
+    flex:1;font:inherit;font-size:.82rem;cursor:pointer;padding:11px 6px;
+    background:var(--card);color:var(--muted);
+    border:1px solid var(--line);border-radius:11px;line-height:1.4;
+  }
+  .mode button.on{background:var(--gold);color:#2b1c06;border-color:var(--gold);font-weight:700}
+  .mode small{display:block;font-size:.68rem;opacity:.85;margin-top:2px}
+
+  .save{
+    margin:0 14px 16px;padding:11px 13px;border-radius:11px;
+    background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.32);
+    color:var(--green);font-size:.8rem;text-align:center;line-height:1.75;
+  }
+
+  .add{
+    flex-shrink:0;width:34px;height:34px;border-radius:9px;cursor:pointer;
+    background:var(--gold);color:#2b1c06;border:none;font-size:20px;
+    font-weight:700;align-self:center;display:grid;place-items:center;
+  }
+  .add:active{transform:scale(.9)}
+  .qty{
+    flex-shrink:0;display:flex;align-items:center;gap:8px;align-self:center;
+  }
+  .qty button{
+    width:29px;height:29px;border-radius:8px;cursor:pointer;font-size:17px;
+    background:var(--card);color:var(--gold);border:1px solid var(--gold);
+    display:grid;place-items:center;
+  }
+  .qty b{min-width:18px;text-align:center;font-size:.95rem}
+
+  #cartbar{
+    position:fixed;bottom:0;left:0;right:0;z-index:40;
+    background:rgba(36,28,23,.99);border-top:1px solid var(--gold);
+    padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));
+    display:none;backdrop-filter:blur(8px);
+  }
+  #cartbar.on{display:block}
+  .sum{display:flex;justify-content:space-between;font-size:.88rem;margin-bottom:4px}
+  .sum b{color:var(--gold)}
+  .tot{display:flex;justify-content:space-between;font-size:1.05rem;font-weight:700;
+       padding-top:8px;margin-top:6px;border-top:1px solid var(--line)}
+  .tot b{color:var(--gold)}
+  #order{
+    display:block;width:100%;margin-top:11px;padding:14px;border:none;
+    border-radius:12px;background:var(--green);color:#04310f;
+    font:inherit;font-weight:700;font-size:.98rem;cursor:pointer;text-align:center;
+    text-decoration:none;
+  }
 </style>
 </head>
 <body>
@@ -118,12 +171,24 @@
   هذا نموذج توضيحي — الأسماء والأسعار تجريبية
 </div>
 
+<div class="mode" id="mode">
+  <button data-m="hall" class="on">في الصالة<small>اطلب من طاولتك</small></button>
+  <button data-m="pick">استلام<small>تعال خذ طلبك</small></button>
+  <button data-m="del">توصيل<small>لبيتك</small></button>
+</div>
+
+<div class="save">
+  الطلب مباشرة من المطعم — بلا عمولة تطبيقات، فالسعر أقل عليك والمطعم يكسب أكثر
+</div>
+
 <nav id="nav"></nav>
 <main id="main"></main>
 
-<div class="bar">
-  <a class="wa" href="https://wa.me/962790000000?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D8%8C%20%D8%A8%D8%AF%D9%8A%20%D8%A3%D8%B7%D9%84%D8%A8" target="_blank" rel="noopener">اطلب على واتساب</a>
-  <a class="call" href="tel:+962790000000">اتصل</a>
+<div id="cartbar">
+  <div class="sum"><span>عدد الأصناف</span><b id="cnt">٠</b></div>
+  <div class="sum" id="delrow" style="display:none"><span>التوصيل</span><b id="delval">١.٥٠ د.أ</b></div>
+  <div class="tot"><span id="totlbl">المجموع</span><b id="tot">٠.٠٠ د.أ</b></div>
+  <a id="order" href="#" target="_blank" rel="noopener">أرسل الطلب على واتساب</a>
 </div>
 
 <footer>
@@ -133,34 +198,161 @@
 
 <script>
 (function(){
+
+  /* ============ نظام الطلب ============ */
+  var WA_NUM   = '962790000000';   // رقم واتساب المطعم
+  var DELIVERY = 1.50;             // سعر التوصيل
+  var CUR      = ' د.أ';
+
+  var cart = {};                   // name -> {price, qty}
+  var mode = 'hall';
+
+  var AR = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+  function toAr(str){
+    return String(str).replace(/[0-9]/g, function(d){ return AR[+d]; });
+  }
+  function money(n){ return toAr(n.toFixed(2)) + CUR; }
+
+  // أسعار رقمية موازية للعرض العربي
+  function priceOf(item){ return item.v; }
+
+  function itemsCount(){
+    var c = 0;
+    for (var k in cart) c += cart[k].qty;
+    return c;
+  }
+  function subtotal(){
+    var t = 0;
+    for (var k in cart) t += cart[k].price * cart[k].qty;
+    return t;
+  }
+
+  function renderCart(){
+    var n = itemsCount();
+    var bar = document.getElementById('cartbar');
+    if (!n){ bar.classList.remove('on'); document.body.style.paddingBottom='86px'; return; }
+    bar.classList.add('on');
+    document.body.style.paddingBottom = '210px';
+
+    document.getElementById('cnt').textContent = toAr(n);
+
+    var sub = subtotal();
+    var delRow = document.getElementById('delrow');
+    var total = sub;
+    if (mode === 'del'){
+      delRow.style.display = 'flex';
+      document.getElementById('delval').textContent = money(DELIVERY);
+      total = sub + DELIVERY;
+    } else {
+      delRow.style.display = 'none';
+    }
+    document.getElementById('tot').textContent = money(total);
+
+    var lbl = mode === 'hall' ? 'المجموع (صالة)'
+            : mode === 'pick' ? 'المجموع (استلام)'
+            : 'المجموع مع التوصيل';
+    document.getElementById('totlbl').textContent = lbl;
+
+    // رسالة واتساب
+    var modeTxt = mode === 'hall' ? 'طلب داخل الصالة'
+                : mode === 'pick' ? 'طلب استلام من المطعم'
+                : 'طلب توصيل';
+    var lines = ['*' + modeTxt + '*', ''];
+    for (var k in cart){
+      lines.push('• ' + k + ' × ' + toAr(cart[k].qty) + '  —  ' + money(cart[k].price * cart[k].qty));
+    }
+    lines.push('');
+    lines.push('المجموع: ' + money(sub));
+    if (mode === 'del'){
+      lines.push('التوصيل: ' + money(DELIVERY));
+      lines.push('*الإجمالي: ' + money(total) + '*');
+      lines.push('');
+      lines.push('العنوان: ');
+    } else {
+      lines.push('*الإجمالي: ' + money(total) + '*');
+    }
+    if (mode === 'hall'){
+      lines.push('');
+      lines.push('رقم الطاولة: ');
+    }
+    document.getElementById('order').href =
+      'https://wa.me/' + WA_NUM + '?text=' + encodeURIComponent(lines.join('\n'));
+  }
+
+  function addTo(name, price, box){
+    if (!cart[name]) cart[name] = { price: price, qty: 0 };
+    cart[name].qty++;
+    drawQty(name, box);
+    renderCart();
+  }
+  function removeFrom(name, box){
+    if (!cart[name]) return;
+    cart[name].qty--;
+    if (cart[name].qty <= 0) delete cart[name];
+    drawQty(name, box);
+    renderCart();
+  }
+  function drawQty(name, box){
+    box.innerHTML = '';
+    var q = cart[name] ? cart[name].qty : 0;
+    if (!q){
+      var add = document.createElement('button');
+      add.className = 'add'; add.textContent = '+';
+      add.setAttribute('aria-label', 'أضف ' + name);
+      add.addEventListener('click', function(){ addTo(name, box._price, box); });
+      box.appendChild(add);
+      box.className = '';
+      return;
+    }
+    box.className = 'qty';
+    var minus = document.createElement('button'); minus.textContent = '−';
+    minus.setAttribute('aria-label','أنقص');
+    minus.addEventListener('click', function(){ removeFrom(name, box); });
+    var num = document.createElement('b'); num.textContent = toAr(q);
+    var plus = document.createElement('button'); plus.textContent = '+';
+    plus.setAttribute('aria-label','أضف');
+    plus.addEventListener('click', function(){ addTo(name, box._price, box); });
+    box.appendChild(minus); box.appendChild(num); box.appendChild(plus);
+  }
+
+  // أزرار نوع الطلب
+  Array.prototype.forEach.call(document.querySelectorAll('#mode button'), function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('#mode button').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      mode = b.getAttribute('data-m');
+      renderCart();
+    });
+  });
+
   var MENU = [
     { cat:'الأكثر طلباً', items:[
-      { n:'شاورما عربي', d:'خبز عربي، دجاج مشوي، ثومية، مخلل', p:'٢.٥٠', i:'🌯', b:'الأشهر' },
-      { n:'مشاوي مشكل', d:'شيش طاووق، كباب، كفتة، مع أرز وسلطة', p:'٩.٠٠', i:'🍖', b:'يكفي شخصين' },
-      { n:'منسف أردني', d:'لحم غنم، جميد، أرز، لوز محمّص', p:'١٢.٠٠', i:'🍛', b:'طلب مسبق' }
+      { n:'شاورما عربي', d:'خبز عربي، دجاج مشوي، ثومية، مخلل', p:'٢.٥٠', i:'🌯', b:'الأشهر', v:2.5 },
+      { n:'مشاوي مشكل', d:'شيش طاووق، كباب، كفتة، مع أرز وسلطة', p:'٩.٠٠', i:'🍖', b:'يكفي شخصين', v:9.0 },
+      { n:'منسف أردني', d:'لحم غنم، جميد، أرز، لوز محمّص', p:'١٢.٠٠', i:'🍛', b:'طلب مسبق', v:12.0 }
     ]},
     { cat:'المقبلات', items:[
-      { n:'حمص بالطحينة', d:'حمص، طحينة، زيت زيتون، صنوبر', p:'١.٥٠', i:'🥣' },
-      { n:'متبل باذنجان', d:'باذنجان مشوي على الفحم، طحينة، ليمون', p:'١.٧٥', i:'🍆' },
-      { n:'فتوش', d:'خضار موسمية، خبز محمّص، دبس رمان، سمّاق', p:'٢.٠٠', i:'🥗' },
-      { n:'ورق عنب', d:'محشي أرز ولحمة، مطبوخ على نار هادئة', p:'٣.٥٠', i:'🍃' }
+      { n:'حمص بالطحينة', d:'حمص، طحينة، زيت زيتون، صنوبر', p:'١.٥٠', i:'🥣', v:1.5 },
+      { n:'متبل باذنجان', d:'باذنجان مشوي على الفحم، طحينة، ليمون', p:'١.٧٥', i:'🍆', v:1.75 },
+      { n:'فتوش', d:'خضار موسمية، خبز محمّص، دبس رمان، سمّاق', p:'٢.٠٠', i:'🥗', v:2.0 },
+      { n:'ورق عنب', d:'محشي أرز ولحمة، مطبوخ على نار هادئة', p:'٣.٥٠', i:'🍃', v:3.5 }
     ]},
     { cat:'الأطباق الرئيسية', items:[
-      { n:'شيش طاووق', d:'صدر دجاج متبّل، مشوي على الفحم، مع أرز', p:'٦.٥٠', i:'🍗' },
-      { n:'كباب لحمة', d:'لحم بقري مفروم بالبقدونس والبصل', p:'٧.٠٠', i:'🥩' },
-      { n:'ريش غنم', d:'ريش طرية مشوية، مع بطاطا وسلطة', p:'١١.٥٠', i:'🍖' },
-      { n:'صيادية سمك', d:'سمك مشوي، أرز بالبصل، طحينة', p:'٩.٥٠', i:'🐟' }
+      { n:'شيش طاووق', d:'صدر دجاج متبّل، مشوي على الفحم، مع أرز', p:'٦.٥٠', i:'🍗', v:6.5 },
+      { n:'كباب لحمة', d:'لحم بقري مفروم بالبقدونس والبصل', p:'٧.٠٠', i:'🥩', v:7.0 },
+      { n:'ريش غنم', d:'ريش طرية مشوية، مع بطاطا وسلطة', p:'١١.٥٠', i:'🍖', v:11.5 },
+      { n:'صيادية سمك', d:'سمك مشوي، أرز بالبصل، طحينة', p:'٩.٥٠', i:'🐟', v:9.5 }
     ]},
     { cat:'المشروبات', items:[
-      { n:'عيران', d:'لبن مخفوق بالنعنع والملح', p:'١.٠٠', i:'🥛' },
-      { n:'ليمون بالنعنع', d:'ليمون طازج مفروم بالنعنع', p:'١.٥٠', i:'🍋' },
-      { n:'شاي بالنعنع', d:'شاي أحمر بالنعنع الطازج', p:'٠.٧٥', i:'🍵' },
-      { n:'قهوة عربية', d:'قهوة مطحونة بالهيل', p:'١.٠٠', i:'☕' }
+      { n:'عيران', d:'لبن مخفوق بالنعنع والملح', p:'١.٠٠', i:'🥛', v:1.0 },
+      { n:'ليمون بالنعنع', d:'ليمون طازج مفروم بالنعنع', p:'١.٥٠', i:'🍋', v:1.5 },
+      { n:'شاي بالنعنع', d:'شاي أحمر بالنعنع الطازج', p:'٠.٧٥', i:'🍵', v:0.75 },
+      { n:'قهوة عربية', d:'قهوة مطحونة بالهيل', p:'١.٠٠', i:'☕', v:1.0 }
     ]},
     { cat:'الحلويات', items:[
-      { n:'كنافة نابلسية', d:'جبنة، كنافة، قطر، فستق', p:'٣.٠٠', i:'🍮', b:'طازج يومياً' },
-      { n:'بقلاوة', d:'تشكيلة بقلاوة بالفستق والجوز', p:'٢.٥٠', i:'🥮' },
-      { n:'مهلبية', d:'مهلبية بالحليب والماء الورد', p:'١.٧٥', i:'🍨' }
+      { n:'كنافة نابلسية', d:'جبنة، كنافة، قطر، فستق', p:'٣.٠٠', i:'🍮', b:'طازج يومياً', v:3.0 },
+      { n:'بقلاوة', d:'تشكيلة بقلاوة بالفستق والجوز', p:'٢.٥٠', i:'🥮', v:2.5 },
+      { n:'مهلبية', d:'مهلبية بالحليب والماء الورد', p:'١.٧٥', i:'🍨', v:1.75 }
     ]}
   ];
 
@@ -215,7 +407,10 @@
       pr.className = 'price';
       pr.textContent = it.p + ' د.أ';
 
-      row.appendChild(ico); row.appendChild(info); row.appendChild(pr);
+      var ctl = document.createElement('div');
+      ctl._price = it.v;
+      row.appendChild(ico); row.appendChild(info); row.appendChild(pr); row.appendChild(ctl);
+      drawQty(it.n, ctl);
       sec.appendChild(row);
     });
 
